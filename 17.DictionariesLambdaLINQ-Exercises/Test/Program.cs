@@ -10,114 +10,145 @@ namespace Test
     {
         static void Main(string[] args)
         {
-            var keyMaterialsQuantity = new SortedDictionary<string, int>();
-            var junkMaterialsQuantity = new SortedDictionary<string, int>();
+            var inputLine = Console.ReadLine();
+            var inputLineSplitedToCommand = inputLine.Split().ToList();
+            var command = inputLineSplitedToCommand[0];
+            var venuesSingerPrice = new Dictionary<string, Dictionary<string, int>>();
 
-            keyMaterialsQuantity.Add("shards", 0);
-            keyMaterialsQuantity.Add("fragments", 0);
-            keyMaterialsQuantity.Add("motes", 0);
-
-            while (true)
+            while (command != "End")
             {
-                var inputLine = Console.ReadLine().ToLower().Split().ToList();
-                var quantitiesEnteredMaterials = inputLine.Where((str, index) => index % 2 == 0).Select(str => str)
-                    .Select(str => int.Parse(str)).ToList();
-                var namesEnteredMaterials = inputLine.Where((str, index) => index % 2 == 1).Select(str => str).ToList();
-
-                for (int i = 0; i < namesEnteredMaterials.Count; i++)
+                var isInputCorrect = CheckIsInputCorrect(inputLine);
+                
+                if (!isInputCorrect)
                 {
-                    var nameCurrentMaterial = namesEnteredMaterials[i];
-                    var quantityCurrentMaterial = quantitiesEnteredMaterials[i];
+                    inputLine = Console.ReadLine();
+                    inputLineSplitedToCommand = inputLine.Split().ToList();
+                    command = inputLineSplitedToCommand[0];
+                    continue;
+                }
 
-                    if (nameCurrentMaterial == "shards")
+                var inputLineSplitedToSingerVenue = inputLine.Split('@').ToList();
+                var singer = inputLineSplitedToSingerVenue[0].Remove(inputLineSplitedToSingerVenue[0].Length - 1);
+                var venueTickets = inputLineSplitedToSingerVenue[1]
+                    .Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                var ticketCount = int.Parse(venueTickets[venueTickets.Count - 1]);
+                var ticketPrice = int.Parse(venueTickets[venueTickets.Count - 2]);
+                venueTickets.RemoveRange(venueTickets.Count - 2, 2);
+                var venueName = string.Join(" ", venueTickets);
+                var totalPriceSinger = ticketCount * ticketPrice;
+
+                if (!venuesSingerPrice.ContainsKey(venueName))
+                {
+                    var currentSingerPrice = new Dictionary<string, int>();
+                    currentSingerPrice.Add(singer, totalPriceSinger);
+                    venuesSingerPrice.Add(venueName, currentSingerPrice);
+                }
+                else
+                {
+                    var knownSingerPrice = new Dictionary<string, int>();
+                    knownSingerPrice = venuesSingerPrice[venueName];
+
+                    if (!knownSingerPrice.ContainsKey(singer))
                     {
-                        //keyMaterialsQuantity
-                        AddCurrentKeyMaterialQuantityInStock(keyMaterialsQuantity, nameCurrentMaterial, quantityCurrentMaterial);
-
-                        if (keyMaterialsQuantity[nameCurrentMaterial] >= 250)
-                        {
-                            Console.WriteLine("Shadowmourne obtained!");
-                            keyMaterialsQuantity[nameCurrentMaterial] -= 250;
-
-                            //print left material and quantity
-                            PrintLeftMaterialsAndQuantity(keyMaterialsQuantity, junkMaterialsQuantity);
-                            return;
-                        }
-                    }
-                    else if (nameCurrentMaterial == "fragments")
-                    {
-                        //keyMaterialsQuantity
-                        AddCurrentKeyMaterialQuantityInStock(keyMaterialsQuantity, nameCurrentMaterial, quantityCurrentMaterial);
-
-                        if (keyMaterialsQuantity[nameCurrentMaterial] >= 250)
-                        {
-                            Console.WriteLine("Valanyr obtained!");
-                            keyMaterialsQuantity[nameCurrentMaterial] -= 250;
-
-                            //print left material and quantity
-                            PrintLeftMaterialsAndQuantity(keyMaterialsQuantity, junkMaterialsQuantity);
-                            return;
-                        }
-                    }
-                    else if (nameCurrentMaterial == "motes")
-                    {
-                        //keyMaterialsQuantity
-                        AddCurrentKeyMaterialQuantityInStock(keyMaterialsQuantity, nameCurrentMaterial, quantityCurrentMaterial);
-
-                        if (keyMaterialsQuantity[nameCurrentMaterial] >= 250)
-                        {
-                            Console.WriteLine("Dragonwrath obtained!");
-                            keyMaterialsQuantity[nameCurrentMaterial] -= 250;
-
-                            //print left material and quantity
-                            PrintLeftMaterialsAndQuantity(keyMaterialsQuantity, junkMaterialsQuantity);
-                            return;
-                        }
+                        knownSingerPrice.Add(singer, totalPriceSinger);
+                        venuesSingerPrice[venueName] = knownSingerPrice;
                     }
                     else
                     {
-                        //junkMaterialsQuantity
-                        AddCurrentJunkMaterialQuantity(junkMaterialsQuantity, nameCurrentMaterial, quantityCurrentMaterial);
+                        knownSingerPrice[singer] += totalPriceSinger;
+                        venuesSingerPrice[venueName] = knownSingerPrice;
                     }
+                }
+
+                inputLine = Console.ReadLine();
+                inputLineSplitedToCommand = inputLine.Split().ToList();
+                command = inputLineSplitedToCommand[0];
+            }
+
+            PrintVenueSingerTotalPrice(venuesSingerPrice);
+        }
+
+        static void PrintVenueSingerTotalPrice(Dictionary<string, Dictionary<string, int>> venuesSingerPrice)
+        {
+            var knownSingerPrice = new Dictionary<string, int>();
+
+            foreach (var venueSingerPrice in venuesSingerPrice)
+            {
+                Console.WriteLine(venueSingerPrice.Key);
+                knownSingerPrice = venueSingerPrice.Value;
+
+                foreach (var singerPrice in knownSingerPrice.OrderByDescending(price => price.Value))
+                {
+                    Console.WriteLine($"#  {singerPrice.Key} -> {singerPrice.Value}");
                 }
             }
         }
 
-        static void PrintLeftMaterialsAndQuantity(SortedDictionary<string, int> keyMaterialsQuantity, SortedDictionary<string, int> junkMaterialsQuantity)
+        static bool CheckIsInputCorrect(string inputLine)
         {
-            foreach (var keyMaterialQuantity in keyMaterialsQuantity.OrderByDescending(quantity => quantity.Value))
-            {
-                Console.WriteLine($"{keyMaterialQuantity.Key}: {keyMaterialQuantity.Value}");
-            }
+            var isInputCorrect = true;
 
-            foreach (var junkMaterialQuantity in junkMaterialsQuantity)
-            {
-                Console.WriteLine($"{junkMaterialQuantity.Key}: {junkMaterialQuantity.Value}");
-            }
-        }
+            var inputList = inputLine.ToCharArray().ToList();
+            var indexAtSign = inputList.IndexOf('@');
+            var isAtSignOnPlace = inputList[indexAtSign - 1] == ' ' && char.IsLetter(inputList[indexAtSign + 1]);
 
-        static void AddCurrentJunkMaterialQuantity(SortedDictionary<string, int> junkMaterialsQuantity,
-            string nameCurrentMaterial, int quantityCurrentMaterial)
-        {
-            if (!junkMaterialsQuantity.ContainsKey(nameCurrentMaterial))
+            if (isAtSignOnPlace)
             {
-                junkMaterialsQuantity.Add(nameCurrentMaterial, quantityCurrentMaterial);
+                var splitedInputList = inputLine.Split('@').ToList();
+                var singer = splitedInputList[0].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                var venueTickets = splitedInputList[1].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+
+                if (0 < singer.Count && singer.Count < 4)
+                {
+                    if (2 < venueTickets.Count && venueTickets.Count < 6)
+                    {
+                        var count = venueTickets.Count;
+
+                        var isTicketPriceNumber = int.TryParse(venueTickets[count - 2], out int ticketPrice);
+                        //var isTicketPriceNumber = venueTickets[count - 2].All(char.IsDigit);
+                        var isTicketCountNumber = int.TryParse(venueTickets[count - 1], out int ticketCount);
+                        //var isTicketPriceNumber = venueTickets[count - 1].All(char.IsDigit);
+
+                        if (isTicketPriceNumber && isTicketCountNumber)
+                        {
+                            for (int i = 0; i < venueTickets.Count - 2; i++)
+                            {
+                                var isVenueNameOnlyLetters = venueTickets[i].All(char.IsLetter);
+                                if (isVenueNameOnlyLetters)
+                                {
+                                    continue;
+                                    //Console.WriteLine("Venue name is OK!"); 
+                                }
+                                //Console.WriteLine("Venue name is incorrect!");
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            //Console.WriteLine("Tickets are incorrect!");
+                            return false;
+                        }
+
+                    }
+                    else
+                    {
+                        //Console.WriteLine("Venue or tickets counts are incorrect!");
+                        return false;
+                    }
+                }
+                else
+                {
+                    //Console.WriteLine("@ is not on place!");
+                    return false;
+                }
             }
             else
             {
-                var quantityInStock = junkMaterialsQuantity[nameCurrentMaterial];
-                var totalQuantity = quantityInStock + quantityCurrentMaterial;
-                junkMaterialsQuantity[nameCurrentMaterial] = totalQuantity;
+                //Console.WriteLine("@ is not on place!");
+                return false;
             }
-        }
 
-        static void AddCurrentKeyMaterialQuantityInStock(SortedDictionary<string, int> keyMaterialsQuantity,
-            string nameCurrentMaterial, int quantityCurrentMaterial)
-        {
-            var quantityInStock = keyMaterialsQuantity[nameCurrentMaterial];
-            var totalQuantity = quantityInStock + quantityCurrentMaterial;
-            keyMaterialsQuantity[nameCurrentMaterial] = totalQuantity;
-
+            return isInputCorrect;
         }
     }
 }
